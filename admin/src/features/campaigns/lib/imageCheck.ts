@@ -10,6 +10,8 @@ export const MEDIA_RULES: Record<
     aspect: [number, number];
     maxBytes: number;
     hint: string;
+    /** Finishes the wrong-shape error, e.g. "use a wide image, like 963 × 264 px". */
+    shape: string;
   }
 > = {
   banner: {
@@ -19,14 +21,16 @@ export const MEDIA_RULES: Record<
     aspect: [2.0, 2.6],
     maxBytes: 2 * 1024 * 1024,
     hint: "343 × 152 px · PNG, JPG or WebP",
+    shape: "a wide image, like 686 × 304 px",
   },
   "reward-banner": {
     label: "Reward banner image",
-    minWidth: 50,
-    minHeight: 50,
-    aspect: [0.4, 2.2],
-    maxBytes: 1024 * 1024,
-    hint: "84 × 75 px · PNG, JPG or WebP",
+    minWidth: 321,
+    minHeight: 88,
+    aspect: [3.2, 4.2],
+    maxBytes: 2 * 1024 * 1024,
+    hint: "963 × 264 px · PNG, JPG or WebP · keep text near the middle",
+    shape: "a wide image, like 963 × 264 px",
   },
   "prize-tile": {
     label: "Prize tile image",
@@ -34,7 +38,8 @@ export const MEDIA_RULES: Record<
     minHeight: 50,
     aspect: [0.4, 2.2],
     maxBytes: 1024 * 1024,
-    hint: "51 × 51 px · PNG, JPG or WebP",
+    hint: "153 × 153 px · PNG, JPG or WebP",
+    shape: "a square picture of the prize, like 153 × 153 px",
   },
 };
 
@@ -55,7 +60,7 @@ export async function checkImage(file: File, kind: MediaKind): Promise<string | 
     }
     const ratio = width / height;
     if (ratio < rules.aspect[0] || ratio > rules.aspect[1])
-      return `${rules.label} has the wrong shape (${width}×${height})`;
+      return `This image is ${width} × ${height} px. Use ${rules.shape}.`;
   } catch {
     return "This file isn't a readable image";
   }

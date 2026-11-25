@@ -19,10 +19,12 @@ export interface AdminCampaign {
   description: string;
   reward: {
     title: string;
-    /** Prize picture in the app's reward banner. */
-    imageUrl: string | null;
-    /** Prize picture in the shared-link page's tile (falls back to `imageUrl`). */
+    /** Artwork for the app's whole reward banner; null → the app's built-in banner. */
+    bannerImageUrl: string | null;
+    /** Prize picture: shared-link tile and the built-in reward banner. */
     tileImageUrl: string | null;
+    /** Older campaigns' prize picture: used when there is no `tileImageUrl`. */
+    imageUrl: string | null;
     winnerSelection: "top_sharer";
     numberOfWinners: number;
     rankingBasis: RankingBasis;

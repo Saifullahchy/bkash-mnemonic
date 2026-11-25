@@ -13,14 +13,14 @@ export function HomeSkeleton() {
         <div className="h-5 w-32 animate-pulse rounded bg-zinc-200" />
         <div className="h-3 w-48 animate-pulse rounded bg-zinc-100" />
       </div>
-      <div className="grid gap-7 md:grid-cols-2 md:gap-8">
+      <div className="grid gap-5 md:grid-cols-2 md:gap-8">
         {[0, 1].map((i) => (
           <div
             key={i}
             aria-hidden
-            className="border-line overflow-hidden rounded-2xl border md:border-0 md:bg-white"
+            className="overflow-hidden rounded-[22px] border border-[#dadada] bg-white"
           >
-            <div className="aspect-[343/152] animate-pulse bg-zinc-200 md:aspect-[16/7]" />
+            <div className="aspect-[349/152] animate-pulse bg-zinc-200" />
             <div className="space-y-3 p-3">
               <div className="h-4 w-40 animate-pulse rounded bg-zinc-200" />
               <div className="h-[76px] animate-pulse rounded-xl bg-zinc-100" />

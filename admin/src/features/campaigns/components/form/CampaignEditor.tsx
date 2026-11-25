@@ -82,13 +82,14 @@ export function CampaignEditor({ campaign }: { campaign?: AdminCampaign }) {
   };
 
   const bannerUrl = pending.banner?.previewUrl ?? campaign?.media.bannerUrl ?? null;
-  const rewardImageUrl = pending["reward-banner"]?.previewUrl ?? campaign?.reward.imageUrl ?? null;
+  const rewardBannerUrl =
+    pending["reward-banner"]?.previewUrl ?? campaign?.reward.bannerImageUrl ?? null;
   const prizeTileUrl = pending["prize-tile"]?.previewUrl ?? campaign?.reward.tileImageUrl ?? null;
-  // Same fallback as the app: without its own picture the tile shows the reward banner's.
-  const shownTileUrl = prizeTileUrl ?? rewardImageUrl;
+  // Same fallback as the app: older campaigns have a single prize picture.
+  const shownTileUrl = prizeTileUrl ?? campaign?.reward.imageUrl ?? null;
   const readiness = readinessOf(values, {
     banner: Boolean(bannerUrl),
-    rewardImage: Boolean(rewardImageUrl),
+    rewardImage: Boolean(rewardBannerUrl),
     prizeTile: Boolean(shownTileUrl),
   });
   const isPublished = campaign?.status === "published";
@@ -192,7 +193,7 @@ export function CampaignEditor({ campaign }: { campaign?: AdminCampaign }) {
             <ScheduleSection />
             <SectionCard
               title="Media"
-              description="Offer banner, plus the prize pictures for the reward banner and the shared-link page."
+              description="Offer banner, reward banner and prize picture. Without a reward banner image, the app shows its default banner with the reward title and prize picture."
             >
               <div className="grid gap-4 sm:grid-cols-2">
                 <div className="sm:col-span-2">
@@ -208,7 +209,7 @@ export function CampaignEditor({ campaign }: { campaign?: AdminCampaign }) {
                 <MediaDropzone
                   kind="reward-banner"
                   label="Reward banner image"
-                  previewUrl={rewardImageUrl}
+                  previewUrl={rewardBannerUrl}
                   pending={Boolean(pending["reward-banner"])}
                   disabled={!canEdit}
                   onSelect={(file) => selectMedia("reward-banner", file)}
@@ -235,7 +236,7 @@ export function CampaignEditor({ campaign }: { campaign?: AdminCampaign }) {
               bannerUrl={bannerUrl}
               logoUrl={campaign?.media.logoUrl ?? null}
               rewardTitle={values.rewardTitle ?? ""}
-              rewardImageUrl={rewardImageUrl}
+              rewardBannerUrl={rewardBannerUrl}
               prizeTileUrl={shownTileUrl}
             />
             <PublishingCard lifecycle={campaign?.lifecycle ?? "draft"} readiness={readiness} />

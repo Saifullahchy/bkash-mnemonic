@@ -21,7 +21,7 @@ export function getPublishReadiness(c: Campaign, now: Date): PublishReadiness {
   const schedule = c.schedule.endAt > c.schedule.startAt && c.schedule.endAt > now;
   const banner = Boolean(c.media.bannerUrl);
   const logo = Boolean(c.media.logoUrl);
-  const rewardImage = Boolean(c.reward.imageUrl);
+  const rewardImage = Boolean(c.reward.bannerImageUrl);
   const prizeTile = Boolean(c.reward.tileImageUrl ?? c.reward.imageUrl);
 
   const missing: string[] = [];
@@ -76,6 +76,7 @@ export function toAdminCampaignDto(c: CampaignRecord, now: Date): AdminCampaignD
     reward: {
       title: c.reward.title,
       imageUrl: c.reward.imageUrl ?? null,
+      bannerImageUrl: c.reward.bannerImageUrl ?? null,
       tileImageUrl: c.reward.tileImageUrl ?? null,
       winnerSelection: c.reward.winnerSelection,
       numberOfWinners: c.reward.numberOfWinners,

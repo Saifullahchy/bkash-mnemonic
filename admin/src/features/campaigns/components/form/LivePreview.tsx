@@ -11,7 +11,7 @@ interface LivePreviewProps {
   bannerUrl: string | null;
   logoUrl: string | null;
   rewardTitle: string;
-  rewardImageUrl: string | null;
+  rewardBannerUrl: string | null;
   prizeTileUrl: string | null;
 }
 
@@ -75,7 +75,11 @@ export function LivePreview(p: LivePreviewProps) {
             <p className="text-muted line-clamp-3 text-[11px] leading-4">{p.description}</p>
           )}
 
-          <RewardBanner title={p.rewardTitle} imageUrl={p.rewardImageUrl} />
+          <RewardBanner
+            title={p.rewardTitle}
+            bannerUrl={p.rewardBannerUrl}
+            prizeUrl={p.prizeTileUrl}
+          />
 
           <div className="flex gap-2 text-xs font-bold">
             <span className="flex h-9 min-w-0 flex-1 items-center justify-center gap-1.5 rounded-lg bg-[#e2136e] text-white shadow-[0_4px_6px_rgb(74_25_48/0.18)]">
@@ -106,8 +110,18 @@ export function LivePreview(p: LivePreviewProps) {
   );
 }
 
-/** Same layout as the app's PrizeBanner (88px tall, prize right-aligned in an 84×75 slot). */
-function RewardBanner({ title, imageUrl }: { title: string; imageUrl: string | null }) {
+/** Same as the app's PrizeBanner: the uploaded artwork, else the built-in 88px banner. */
+function RewardBanner({
+  title,
+  bannerUrl,
+  prizeUrl,
+}: {
+  title: string;
+  bannerUrl: string | null;
+  prizeUrl: string | null;
+}) {
+  if (bannerUrl)
+    return <img src={bannerUrl} alt="" className="h-[88px] w-full rounded-[14px] object-cover" />;
   return (
     <div className="relative flex h-[88px] flex-col items-start justify-center gap-1 overflow-hidden rounded-[14px] border-[1.5px] border-[#ffd633] bg-gradient-to-r from-[#4d082b] via-[#b80d57] via-55% to-[#ed3385] px-3 shadow-[inset_0_0_10px_0_rgb(255_214_51/0.55)]">
       <span className="text-[9px] font-bold tracking-[0.9px] text-[#ffd973]">TOP SHARER WINS</span>
@@ -117,9 +131,9 @@ function RewardBanner({ title, imageUrl }: { title: string; imageUrl: string | n
       <span className="flex items-center gap-1 rounded-full bg-gradient-to-r from-[#ffeda6] to-[#ffc74d] px-2.5 py-1 text-[10px] font-bold text-[#21181c]">
         🏆 Rank #1
       </span>
-      {imageUrl && (
+      {prizeUrl && (
         <img
-          src={imageUrl}
+          src={prizeUrl}
           alt=""
           className="absolute top-[5.5px] right-[9.85px] h-[74.52px] w-[84px] object-contain object-right"
         />

@@ -39,13 +39,13 @@ export const MEDIA_RULES: Record<MediaKind, ImageRules & { maxBytes: number }> =
     aspect: [0.8, 1.25],
     maxBytes: 1024 * 1024,
   },
-  // Design: 84×75 slot on the right of the reward banner; portrait or landscape prizes fit inside it.
+  // Design: 321×88 reward banner (ratio ≈ 3.65); the image fills it, so allow little tolerance.
   "reward-banner": {
     label: "Reward banner image",
-    minWidth: 50,
-    minHeight: 50,
-    aspect: [0.4, 2.2],
-    maxBytes: 1024 * 1024,
+    minWidth: 321,
+    minHeight: 88,
+    aspect: [3.2, 4.2],
+    maxBytes: 2 * 1024 * 1024,
   },
   // Design: 51×51 slot inside the shared page's 72px prize tile.
   "prize-tile": {
@@ -62,7 +62,7 @@ export const MAX_UPLOAD_BYTES = Math.max(...Object.values(MEDIA_RULES).map((r) =
 const MEDIA_FIELDS: Record<MediaKind, { path: string; get: (c: Campaign) => string | null }> = {
   banner: { path: "media.bannerUrl", get: (c) => c.media.bannerUrl },
   logo: { path: "media.logoUrl", get: (c) => c.media.logoUrl },
-  "reward-banner": { path: "reward.imageUrl", get: (c) => c.reward.imageUrl },
+  "reward-banner": { path: "reward.bannerImageUrl", get: (c) => c.reward.bannerImageUrl },
   "prize-tile": { path: "reward.tileImageUrl", get: (c) => c.reward.tileImageUrl },
 };
 
@@ -236,8 +236,7 @@ export class AdminCampaignService {
     await this.campaigns.deleteById(id);
     await this.log("campaign_deleted", actor, campaign);
     await Promise.all(
-      Object.values(MEDIA_FIELDS)
-        .map((field) => field.get(campaign))
+      [...Object.values(MEDIA_FIELDS).map((field) => field.get(campaign)), campaign.reward.imageUrl]
         .filter((url): url is string => Boolean(url))
         .map((url) => this.removeFile(url)),
     );

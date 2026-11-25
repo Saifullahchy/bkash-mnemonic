@@ -17,9 +17,9 @@ export interface Offer {
   reward: {
     title: string;
     rank: number;
-    /** Prize picture in the reward banner. */
-    imageUrl: string | null;
-    /** Prize picture in the shared-link page's tile. */
+    /** Artwork for the whole reward banner; null → the built-in banner. */
+    bannerImageUrl: string | null;
+    /** Prize picture: shared-link tile and the built-in reward banner. */
     tileImageUrl: string | null;
   };
   /** Unique opens across all participants (public social proof). */

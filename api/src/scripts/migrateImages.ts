@@ -12,7 +12,13 @@ import { logger } from "../config/logger.js";
 import { createStorage } from "../core/storage/createStorage.js";
 import { CampaignModel } from "../modules/campaign/campaign.model.js";
 
-const FIELDS = ["media.bannerUrl", "media.logoUrl", "reward.imageUrl", "reward.tileImageUrl"];
+const FIELDS = [
+  "media.bannerUrl",
+  "media.logoUrl",
+  "reward.bannerImageUrl",
+  "reward.imageUrl",
+  "reward.tileImageUrl",
+];
 const TYPES: Record<string, string> = {
   ".png": "image/png",
   ".jpg": "image/jpeg",

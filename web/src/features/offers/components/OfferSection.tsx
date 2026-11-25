@@ -28,7 +28,7 @@ export function OfferSection({ offers }: { offers: Offer[] }) {
       </div>
 
       {offers.length === 0 ? (
-        <p className="border-line text-muted rounded-2xl border border-dashed p-8 text-center text-sm md:bg-white md:p-14">
+        <p className="border-line text-muted rounded-2xl border border-dashed p-8 text-center text-sm md:p-14">
           No live offers right now. Check back soon!
         </p>
       ) : (

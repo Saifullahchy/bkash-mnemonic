@@ -12,10 +12,12 @@ export interface Campaign {
   description: string;
   reward: {
     title: string;
-    /** Prize picture in the offer card's reward banner. */
-    imageUrl: string | null;
-    /** Prize picture in the shared-link page's tile; falls back to `imageUrl` when unset. */
+    /** Artwork that replaces the whole reward banner; unset → the built-in design. */
+    bannerImageUrl: string | null;
+    /** Prize picture for the shared-link tile and the built-in reward banner. */
     tileImageUrl: string | null;
+    /** Older campaigns' prize picture: used when there is no `tileImageUrl`. */
+    imageUrl: string | null;
     winnerSelection: (typeof WINNER_SELECTION)[number];
     numberOfWinners: number;
     rankingBasis: (typeof RANKING_BASIS)[number];
@@ -67,6 +69,7 @@ const campaignSchema = new Schema<Campaign>(
     reward: {
       title: { type: String, required: true, trim: true, maxlength: 80 },
       imageUrl: { type: String, default: null },
+      bannerImageUrl: { type: String, default: null },
       tileImageUrl: { type: String, default: null },
       winnerSelection: { type: String, enum: WINNER_SELECTION, default: "top_sharer" },
       numberOfWinners: { type: Number, default: 1, min: 1, max: 100 },

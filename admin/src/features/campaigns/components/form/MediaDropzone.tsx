@@ -70,7 +70,7 @@ export function MediaDropzone({
             <img
               src={previewUrl}
               alt={`${label} preview`}
-              className={cn("size-full object-contain", kind !== "banner" && "p-4")}
+              className={cn("size-full object-contain", kind === "prize-tile" && "p-4")}
             />
             <button
               type="button"

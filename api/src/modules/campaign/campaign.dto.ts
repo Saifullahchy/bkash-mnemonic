@@ -23,7 +23,7 @@ export interface PublicOfferDto {
   reward: {
     title: string;
     rank: number;
-    imageUrl: string | null;
+    bannerImageUrl: string | null;
     tileImageUrl: string | null;
   };
   /** Unique link opens across all participants (social proof). */
@@ -50,8 +50,7 @@ export function toPublicOfferDto(
     reward: {
       title: campaign.reward.title,
       rank: 1,
-      imageUrl: campaign.reward.imageUrl ?? null,
-      // Campaigns without their own tile picture reuse the reward banner's.
+      bannerImageUrl: campaign.reward.bannerImageUrl ?? null,
       tileImageUrl: campaign.reward.tileImageUrl ?? campaign.reward.imageUrl ?? null,
     },
     totalOpens: campaign.stats.opens,

@@ -35,8 +35,8 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
     // mismatches inside the page are still reported.
     <html lang="en" className={inter.variable} suppressHydrationWarning>
       {/* Phones/small tablets: a centered phone-width column. Desktop (md+): full width; each section is limited to --page-width. */}
-      <body className="min-h-dvh bg-zinc-100 font-sans" suppressHydrationWarning>
-        <div className="bg-surface relative mx-auto flex min-h-dvh w-full max-w-[448px] flex-col shadow-[0_0_40px_-12px_rgb(0_0_0/0.15)] md:max-w-none md:bg-[#ededed] md:shadow-none">
+      <body className="min-h-dvh bg-white font-sans" suppressHydrationWarning>
+        <div className="bg-surface relative mx-auto flex min-h-dvh w-full max-w-[448px] flex-col shadow-[0_0_40px_-12px_rgb(0_0_0/0.15)] md:max-w-none md:shadow-none">
           <StoreProvider>
             <SmoothScroll>{children}</SmoothScroll>
           </StoreProvider>

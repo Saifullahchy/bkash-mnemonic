@@ -58,8 +58,8 @@ describe("GET /v1/campaigns", () => {
       reward: {
         title: "iPhone 18 Pro",
         rank: 1,
-        imageUrl: "https://cdn.example.com/prize.png",
-        // No tile picture of its own → reuses the reward banner's.
+        bannerImageUrl: null,
+        // No tile picture of its own → reuses the older prize picture.
         tileImageUrl: "https://cdn.example.com/prize.png",
       },
       totalOpens: 78540,

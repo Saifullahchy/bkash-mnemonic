@@ -276,14 +276,14 @@ describe("media uploads", () => {
         .attach("file", png, { filename: "prize.png", contentType: "image/png" })
         .expect(200);
 
-    const first = await upload("reward-banner", fakePng(104, 150));
+    const first = await upload("reward-banner", fakePng(963, 264));
     expect(first.body.data.reward).toMatchObject({
-      imageUrl: expect.stringMatching(/\/reward-banner-\w{12}\.png$/) as string,
+      bannerImageUrl: expect.stringMatching(/\/reward-banner-\w{12}\.png$/) as string,
       tileImageUrl: null,
     });
     const second = await upload("prize-tile", fakePng(102, 102));
-    const { imageUrl, tileImageUrl } = second.body.data.reward as Record<string, string>;
-    expect(imageUrl).toBe(first.body.data.reward.imageUrl);
+    const { bannerImageUrl, tileImageUrl } = second.body.data.reward as Record<string, string>;
+    expect(bannerImageUrl).toBe(first.body.data.reward.bannerImageUrl);
     expect(tileImageUrl).toMatch(/\/prize-tile-\w{12}\.png$/);
     expect(second.body.data.publishReadiness).toMatchObject({ rewardImage: true, prizeTile: true });
 
@@ -292,12 +292,12 @@ describe("media uploads", () => {
       .set("Cookie", cookie)
       .send({ reward: { title: "Bata gift card" } })
       .expect(200);
-    expect(edited.body.data.reward).toMatchObject({ imageUrl, tileImageUrl });
+    expect(edited.body.data.reward).toMatchObject({ bannerImageUrl, tileImageUrl });
 
     // Replacing one deletes only its own file; deleting the draft removes the rest.
-    const replaced = await upload("reward-banner", fakePng(150, 100));
-    const newUrl = replaced.body.data.reward.imageUrl as string;
-    expect(existsSync(fileFor(imageUrl!))).toBe(false);
+    const replaced = await upload("reward-banner", fakePng(642, 176));
+    const newUrl = replaced.body.data.reward.bannerImageUrl as string;
+    expect(existsSync(fileFor(bannerImageUrl!))).toBe(false);
     expect(existsSync(fileFor(tileImageUrl!))).toBe(true);
     await app().delete(`/v1/admin/campaigns/${id}`).set("Cookie", cookie).expect(204);
     expect(existsSync(fileFor(newUrl))).toBe(false);
@@ -313,6 +313,18 @@ describe("media uploads", () => {
     const { body } = await create().expect(201);
     const res = await uploadBanner(body.data.id as string, file);
     expect(res.status).toBe(status);
+  });
+
+  it.each([
+    ["a prize picture as a reward banner", fakePng(400, 400)],
+    ["a reward banner smaller than 321×88", fakePng(300, 82)],
+  ])("rejects %s", async (_label, file) => {
+    const { body } = await create().expect(201);
+    await app()
+      .post(`/v1/admin/campaigns/${body.data.id as string}/media/reward-banner`)
+      .set("Cookie", cookie)
+      .attach("file", file, { filename: "reward.png", contentType: "image/png" })
+      .expect(400);
   });
 
   it("rejects a request without a file and an unknown media kind", async () => {
