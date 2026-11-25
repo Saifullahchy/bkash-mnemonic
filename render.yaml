@@ -1,8 +1,7 @@
-# Render Blueprint: the offer site, the admin panel, the API and Redis. MongoDB runs on Atlas.
-# Guide: README.md → "Deploy on Render".
+# Free test environment on Render (Blueprint). Not needed for production: see README.md → "Deploy".
 #
-# If Render gives a service another address (a name was taken) or you add custom domains, update
-# the https://…onrender.com values below: NEXT_PUBLIC_SITE_URL, API_URL, CORS_ORIGINS, PUBLIC_SITE_URL.
+# If Render gives a service another address (a name was taken), update the https://…onrender.com
+# values below: NEXT_PUBLIC_SITE_URL, API_URL, CORS_ORIGINS, PUBLIC_SITE_URL.
 
 services:
   # ---------------------------------------------------------------- API
@@ -10,11 +9,10 @@ services:
     name: bkash-mnemonic-api
     runtime: node
     region: singapore
-    plan: starter
+    plan: free
     rootDir: api
     buildCommand: npm ci --include=dev && npm run build
-    preDeployCommand: node dist/scripts/syncIndexes.js
-    startCommand: npm start
+    startCommand: node dist/scripts/syncIndexes.js && npm start
     healthCheckPath: /health
     autoDeployTrigger: commit
     envVars:
@@ -55,18 +53,13 @@ services:
       # Network
       - key: TRUST_PROXY
         value: "1"
-      - key: REDIS_URL
-        fromService:
-          type: keyvalue
-          name: bkash-mnemonic-redis
-          property: connectionString
 
   # ---------------------------------------------------------------- Offer site
   - type: web
     name: bkash-mnemonic-web
     runtime: node
     region: singapore
-    plan: starter
+    plan: free
     rootDir: web
     buildCommand: npm ci --include=dev && npm run build
     startCommand: npm start
@@ -116,11 +109,3 @@ services:
           type: web
           name: bkash-mnemonic-api
           envVarKey: PROXY_SECRET
-
-  # ---------------------------------------------------------------- Redis (shared rate limits)
-  - type: keyvalue
-    name: bkash-mnemonic-redis
-    region: singapore
-    plan: free
-    ipAllowList: [] # only reachable from this workspace's services
-    maxmemoryPolicy: volatile-ttl

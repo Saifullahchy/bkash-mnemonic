@@ -19,7 +19,8 @@ const errorResponse = (status: number, code: string, message: string) =>
 
 /**
  * The visitor's IP as reported by the hosting platform. CLIENT_IP_HEADER must name a header the
- * platform always overwrites (Render: cf-connecting-ip), or visitors could fake their address.
+ * platform always overwrites (e.g. cf-connecting-ip behind Cloudflare, x-real-ip behind nginx), or
+ * visitors could fake their address.
  * Without it, the last X-Forwarded-For entry (added by the nearest proxy) is used.
  */
 function clientIp(headers: Headers): string | undefined {

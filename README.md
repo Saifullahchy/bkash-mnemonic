@@ -3,21 +3,20 @@
 A share-to-win campaign platform. Visitors pick an offer, get a personal link, share it with
 friends, and the top sharer wins the prize.
 
-| Folder            | What it is                                           | Stack                                          | Local URL             |
-| ----------------- | ---------------------------------------------------- | ---------------------------------------------- | --------------------- |
-| [`web/`](web)     | Offer site for visitors                              | Next.js 16, React 19, Tailwind                 | http://localhost:3000 |
-| [`admin/`](admin) | Admin panel (campaigns, winners, exports)            | Next.js 16, React 19, Tailwind                 | http://localhost:3002 |
-| [`api/`](api)     | REST API, background jobs                            | Node 22, Express 5, MongoDB, Redis, TypeScript | http://localhost:4000 |
-| `render.yaml`     | Everything Render needs to deploy the three services |                                                |                       |
-| `scripts/`        | Env file and secret generator                        |                                                |                       |
+| Folder            | What it is                                | Stack                                          | Local URL             |
+| ----------------- | ----------------------------------------- | ---------------------------------------------- | --------------------- |
+| [`web/`](web)     | Offer site for visitors                   | Next.js 16, React 19, Tailwind                 | http://localhost:3000 |
+| [`admin/`](admin) | Admin panel (campaigns, winners, exports) | Next.js 16, React 19, Tailwind                 | http://localhost:3002 |
+| [`api/`](api)     | REST API, background jobs                 | Node 22, Express 5, MongoDB, Redis, TypeScript | http://localhost:4000 |
+| `scripts/`        | Env file and secret generator             |                                                |                       |
 
-Outside services: **MongoDB Atlas** (database in production), **ImageKit** (uploaded images),
-**Render** (hosting and Redis).
+Outside services: **MongoDB** (Atlas or self-hosted), **ImageKit** (uploaded images) and, when the
+API runs on more than one instance, **Redis**.
 
 **Contents:** [How it fits together](#how-it-fits-together) ·
 [Run locally](#run-locally) · [Environment variables](#environment-variables) ·
 [Generate secrets and the salt](#generate-secrets-and-the-salt) ·
-[Deploy on Render](#deploy-on-render) · [Custom domains](#custom-domains) ·
+[Deploy](#deploy) ·
 [Handover checklist](#handover-checklist) · [Troubleshooting](#troubleshooting)
 
 ## How it fits together
@@ -29,9 +28,8 @@ Browser ──► admin /api/v1/*  ──┘
 ```
 
 Browsers never call the API directly. They call `/api/v1/*` on the site they are on, and that
-server forwards the request. Cookies therefore belong to the web or admin host, so login works on
-any domain, including Render's `onrender.com` addresses (browsers treat those as unrelated sites
-and would block cookies shared between them).
+server forwards the request. Cookies therefore belong to the web or admin host, so login works
+wherever the three services run, even on unrelated domains.
 
 Since every request now reaches the API from the web or admin server, those servers pass the
 visitor's IP along and prove who they are with `PROXY_SECRET`. The API ignores the IP without it.
@@ -121,7 +119,7 @@ and then fill in the secrets as described in the next section.
 | `CORS_ORIGINS`                            | yes           | no     | Web and admin URLs, comma-separated                                                            |
 | `PUBLIC_SITE_URL`                         | yes           | no     | Offer site URL; share links are built from it                                                  |
 | `REDIS_URL`                               | no            | yes    | Shared rate limits; empty = in memory (one instance only)                                      |
-| `TRUST_PROXY`                             | no            | no     | Number of proxies in front of the API: `0` locally, `1` on Render                              |
+| `TRUST_PROXY`                             | no            | no     | Number of proxies in front of the API: `0` locally, usually `1` hosted                         |
 | `SMTP_URL`, `MAIL_FROM`                   | no            | yes    | Scheduled email reports; empty = written to `outbox/`                                          |
 | `SEED_ADMIN_EMAIL`, `SEED_ADMIN_PASSWORD` | local only    | yes    | Admin created by `npm run seed`                                                                |
 | `COOKIE_DOMAIN`                           | no            | no     | Leave empty                                                                                    |
@@ -130,13 +128,13 @@ Session lengths and rate limits have sensible defaults; see `api/.env.example`.
 
 ### web and admin
 
-| Variable                | Required      | Secret | What it is                                                         |
-| ----------------------- | ------------- | ------ | ------------------------------------------------------------------ |
-| `NEXT_PUBLIC_SITE_URL`  | yes           | no     | Offer site URL. Read **at build time**: redeploy after changing it |
-| `API_URL`               | yes           | no     | API address ending in `/v1`. Only used by the server               |
-| `PROXY_SECRET`          | in production | yes    | Same value as in the API                                           |
-| `CLIENT_IP_HEADER`      | on Render     | no     | `cf-connecting-ip` on Render, empty locally                        |
-| `IMAGE_REMOTE_PATTERNS` | yes           | no     | Image hosts that may be loaded. Read **at build time**             |
+| Variable                | Required      | Secret | What it is                                                                              |
+| ----------------------- | ------------- | ------ | --------------------------------------------------------------------------------------- |
+| `NEXT_PUBLIC_SITE_URL`  | yes           | no     | Offer site URL. Read **at build time**: redeploy after changing it                      |
+| `API_URL`               | yes           | no     | API address ending in `/v1`. Only used by the server                                    |
+| `PROXY_SECRET`          | in production | yes    | Same value as in the API                                                                |
+| `CLIENT_IP_HEADER`      | in production | no     | Header with the visitor's IP ([how to choose](#3-environment-variables)); empty locally |
+| `IMAGE_REMOTE_PATTERNS` | yes           | no     | Image hosts that may be loaded. Rebuild after changing it                               |
 
 Anything starting with `NEXT_PUBLIC_` is visible in the browser. Never put a secret in one.
 
@@ -164,8 +162,7 @@ or with OpenSSL:
 openssl rand -base64 48
 ```
 
-Use separate values for local and production. On Render you don't generate them: the Blueprint
-does it once.
+Use separate values for local, test and production.
 
 What happens if you change one later:
 
@@ -180,18 +177,27 @@ What happens if you change one later:
 The salt is mixed into every device and network hash before storing it, so raw IP addresses are
 never saved and the stored hashes can't be reversed by guessing.
 
-## Deploy on Render
+## Deploy
 
-[`render.yaml`](render.yaml) describes three web services and Redis in the Singapore region.
+The three services run on any host that offers Node.js 22 or Docker: a VPS, a container platform or
+a managed Node host. Each service is independent and gets its own address:
 
-### 1. Database: MongoDB Atlas
+| Service | Example address             | Public? | Listens on            | Health check                           |
+| ------- | --------------------------- | ------- | --------------------- | -------------------------------------- |
+| web     | `https://example.com`       | yes     | `PORT` (default 3000) | `/healthz`                             |
+| admin   | `https://admin.example.com` | yes     | `PORT` (default 3002) | `/healthz`                             |
+| api     | `https://api.example.com`   | no need | `PORT` (default 4000) | `/health`, and `/ready` (database too) |
 
-1. Create a cluster at [cloud.mongodb.com](https://cloud.mongodb.com), in AWS Singapore
-   (`ap-southeast-1`).
+Only web and admin need to be reachable by visitors. If the host has a private network, keep the
+API on it and use its internal address in `API_URL`.
+
+### 1. Database
+
+Any MongoDB 7 or newer works. With MongoDB Atlas:
+
+1. Create a cluster in the region closest to the API.
 2. **Database Access:** add a user with a generated password and the _Read and write_ role.
-3. **Network Access:** allow Render's outbound ranges (Render dashboard → a service → Connect →
-   Outbound). You only see them once a service exists, so for the first deploy allow `0.0.0.0/0`
-   and narrow it afterwards.
+3. **Network Access:** allow the API server's outbound IP addresses.
 4. **Connect → Drivers:** copy the connection string and add the database name before the `?`:
 
    ```
@@ -200,31 +206,109 @@ never saved and the stored hashes can't be reversed by guessing.
 
    Percent-encode special characters in the password.
 
-### 2. Images: ImageKit
+### 2. Images
 
 Copy the **private key** from ImageKit → Developer options → API keys. To use another ImageKit
-account, also change `IMAGEKIT_URL_ENDPOINT` and both `IMAGE_REMOTE_PATTERNS` in `render.yaml`.
+account, also change `IMAGEKIT_URL_ENDPOINT` (api) and `IMAGE_REMOTE_PATTERNS` (web and admin).
 
-### 3. Create the Blueprint
+### 3. Environment variables
 
-1. In Render choose **New → Blueprint** and connect this repository.
-2. Enter the two values it asks for: `MONGODB_URI` and `IMAGEKIT_PRIVATE_KEY`.
-3. Review the plans and cost, then **Apply**.
+Set these on each service, with your own addresses. Generate the secrets with
+`node scripts/setup-env.mjs --print`.
 
-Render generates the five secrets and shares `PROXY_SECRET` with web and admin. Before each API
-release it creates any missing database indexes.
+**api**
 
-**If a service gets a different address** (its name was already taken), update these values in
-`render.yaml`, commit and push:
+```
+NODE_ENV=production
+MONGODB_URI=mongodb+srv://…
+PUBLIC_SITE_URL=https://example.com
+CORS_ORIGINS=https://example.com,https://admin.example.com
+SESSION_SECRET=…
+ADMIN_SESSION_SECRET=…
+OPEN_TOKEN_SECRET=…
+FINGERPRINT_SALT=…
+PROXY_SECRET=…
+IMAGEKIT_PRIVATE_KEY=…
+TRUST_PROXY=1
+# only with several API instances
+REDIS_URL=redis://…
+# only for scheduled email reports
+SMTP_URL=smtps://…
+```
 
-| Value                                 | Set to                     |
-| ------------------------------------- | -------------------------- |
-| api: `PUBLIC_SITE_URL`                | web address                |
-| api: `CORS_ORIGINS`                   | web address, admin address |
-| web and admin: `NEXT_PUBLIC_SITE_URL` | web address                |
-| web and admin: `API_URL`              | api address + `/v1`        |
+**web and admin**
 
-### 4. Create the first admin
+```
+NEXT_PUBLIC_SITE_URL=https://example.com
+API_URL=https://api.example.com/v1
+# same value as in the API
+PROXY_SECRET=…
+# see below
+CLIENT_IP_HEADER=…
+IMAGE_REMOTE_PATTERNS=https://ik.imagekit.io/yyzpkkigy/**
+```
+
+`NEXT_PUBLIC_SITE_URL`, `API_URL` and `IMAGE_REMOTE_PATTERNS` are needed **while building and while
+running** (the Docker images below keep their build values).
+
+**`CLIENT_IP_HEADER`** names the header that holds the visitor's IP. Unique opens and rate limits
+depend on it, so choose the one your proxy always sets itself:
+
+| In front of web and admin | Value                                                        |
+| ------------------------- | ------------------------------------------------------------ |
+| Cloudflare                | `cf-connecting-ip`                                           |
+| nginx                     | `x-real-ip`, with `proxy_set_header X-Real-IP $remote_addr;` |
+| One other load balancer   | leave empty (the last `X-Forwarded-For` address is used)     |
+| A CDN and a load balancer | the CDN's own client-IP header                               |
+
+Never use a header that a visitor can send through unchanged: they could fake their address. Keep
+web and admin reachable only through that proxy.
+
+### 4. Build and start
+
+**With Node.js**
+
+| Service | Folder  | Build                                   | Before each release                | Start       |
+| ------- | ------- | --------------------------------------- | ---------------------------------- | ----------- |
+| api     | `api`   | `npm ci --include=dev && npm run build` | `node dist/scripts/syncIndexes.js` | `npm start` |
+| web     | `web`   | `npm ci --include=dev && npm run build` |                                    | `npm start` |
+| admin   | `admin` | `npm ci --include=dev && npm run build` |                                    | `npm start` |
+
+`syncIndexes` creates missing database indexes. It is required before the first start: the unique
+indexes are what stop an open from being counted twice. Use a process manager (systemd, pm2 or the
+host's own) so services restart by themselves.
+
+**With Docker**
+
+```bash
+docker build -t offer-api api
+docker build -t offer-web web \
+  --build-arg NEXT_PUBLIC_SITE_URL=https://example.com \
+  --build-arg API_URL=https://api.example.com/v1 \
+  --build-arg IMAGE_REMOTE_PATTERNS='https://ik.imagekit.io/yyzpkkigy/**'
+docker build -t offer-admin admin \
+  --build-arg NEXT_PUBLIC_SITE_URL=https://example.com \
+  --build-arg API_URL=https://api.example.com/v1 \
+  --build-arg IMAGE_REMOTE_PATTERNS='https://ik.imagekit.io/yyzpkkigy/**'
+
+docker run --rm --env-file api.env offer-api node dist/scripts/syncIndexes.js
+docker run -d --restart unless-stopped --env-file api.env   -p 4000:4000 offer-api
+docker run -d --restart unless-stopped --env-file web.env   -p 3000:3000 offer-web
+docker run -d --restart unless-stopped --env-file admin.env -p 3002:3002 offer-admin
+```
+
+In `--env-file` files, write values without quotes and put no comment after a value.
+
+### 5. Domains and HTTPS
+
+Point each domain at its service and serve it over **HTTPS**: session cookies are only sent over
+HTTPS, and the API refuses to start in production with non-HTTPS addresses. Leave `COOKIE_DOMAIN`
+empty.
+
+When an address changes, update `PUBLIC_SITE_URL` and `CORS_ORIGINS` (api), and
+`NEXT_PUBLIC_SITE_URL` and `API_URL` (web and admin), then rebuild web and admin.
+
+### 6. Create the first admin
 
 Run this once from your computer against the production database. It asks for the values so they
 don't end up in your shell history:
@@ -232,22 +316,22 @@ don't end up in your shell history:
 ```bash
 cd api
 npm install
-read -rs "MONGODB_URI?Atlas connection string: "; echo
+read -rs "MONGODB_URI?MongoDB connection string: "; echo
 read -rs "ADMIN_PASSWORD?Admin password (12+ characters): "; echo
 export MONGODB_URI ADMIN_PASSWORD
 ADMIN_EMAIL=you@example.com ADMIN_NAME="Your Name" npm run admin:create
 unset MONGODB_URI ADMIN_PASSWORD
 ```
 
-That is zsh (macOS). In bash use `read -rsp "Atlas connection string: " MONGODB_URI` instead. It
-needs a local `api/.env` (see [Run locally](#run-locally)). On a paid plan you can instead run
-`node dist/scripts/createAdmin.js` with the same variables in the API's Render Shell.
+That is zsh (macOS). In bash use `read -rsp "MongoDB connection string: " MONGODB_URI` instead. It
+needs a local `api/.env` (see [Run locally](#run-locally)), and the database must allow your
+computer's IP. On the server itself, `node dist/scripts/createAdmin.js` does the same.
 
 Don't run `npm run seed` against production: it is demo data.
 
-### 5. Check the deployment
+### 7. Check the deployment
 
-- [ ] `https://<api>/ready` answers `"status":"ready"`
+- [ ] `/ready` on the API answers `"status":"ready"`
 - [ ] The offer site loads and shows no error page
 - [ ] You can sign in to the admin panel
 - [ ] Uploading a banner shows it on the offer site, with an `ik.imagekit.io` address
@@ -255,41 +339,19 @@ Don't run `npm run seed` against production: it is demo data.
 - [ ] A share link opened from **two different networks** (Wi-Fi and mobile data) counts twice.
       If it doesn't, check `CLIENT_IP_HEADER` and `PROXY_SECRET`
 
-Pushing to `main` deploys automatically; only the services whose folder changed are rebuilt.
-
-### Plans
-
-| Service | Plan in `render.yaml` | Why                                                                                  |
-| ------- | --------------------- | ------------------------------------------------------------------------------------ |
-| api     | `starter` (paid)      | Must stay awake for background jobs; the index step needs a paid plan                |
-| web     | `starter` (paid)      | A sleeping site takes about a minute to wake, which loses visitors from shared links |
-| admin   | `free`                | Sleeps after 15 idle minutes; the first visit is slow                                |
-| Redis   | `free`                | Only holds rate-limit counters. Render allows one free Key Value per workspace       |
-
-For a free demo, set every `plan` to `free`, remove `preDeployCommand`, and change the API's
-`startCommand` to `node dist/scripts/syncIndexes.js && npm start`. Expect slow first loads, errors
-while the API wakes up, and background jobs that pause while it sleeps. Free services also can't
-send email over SMTP.
-
-## Custom domains
-
-1. Add each domain in Render (service → Settings → Custom Domains) and create the DNS records it
-   shows, for example `example.com` → web and `admin.example.com` → admin.
-2. Update the same values as in the table under step 3 of the deployment, then push.
-
-The API doesn't need a public domain. Leave `COOKIE_DOMAIN` empty.
+The API runs background jobs every few minutes, so don't let its host put it to sleep.
 
 ## Handover checklist
 
 For passing the project to another developer:
 
 1. **GitHub:** add them to this repository.
-2. **Render, MongoDB Atlas, ImageKit:** invite them to each account. Don't share your own login.
+2. **Hosting, database, ImageKit:** invite them to each account. Don't share your own login.
 3. **Secrets:** they create their own local ones with `node scripts/setup-env.mjs`. Share
    production values only if needed, through a password manager; never by chat, email or git.
 4. **Admin panel:** create an admin account for them (`npm run admin:create`). To block an
    account, set `isActive` to `false` in the `admins` collection; it takes effect immediately.
-5. **When someone leaves:** remove their access, replace the Atlas password and the ImageKit
+5. **When someone leaves:** remove their access, replace the database password and the ImageKit
    private key, and rotate the session secrets and `PROXY_SECRET`
    (see [what each change does](#generate-secrets-and-the-salt)).
 
@@ -297,15 +359,15 @@ Read next: [`api/README.md`](api/README.md) for the API's architecture, scripts 
 
 ## Troubleshooting
 
-| Problem                                                  | Likely cause                                                                     |
-| -------------------------------------------------------- | -------------------------------------------------------------------------------- |
-| API stops with "Invalid environment configuration"       | A required variable is missing or too short; the message names it                |
-| API stops with "Unsafe production configuration"         | An address isn't public https, or two secrets are the same                       |
-| API can't connect to MongoDB                             | Atlas Network Access doesn't allow Render, or the password isn't percent-encoded |
-| "We couldn't load the offers"                            | `API_URL` is wrong or lacks `/v1`, or the API is asleep or down                  |
-| Admin login returns to the login page                    | `COOKIE_DOMAIN` is set (leave it empty), or `API_URL` is wrong on admin          |
-| Images don't show                                        | Their host isn't in `IMAGE_REMOTE_PATTERNS`; redeploy after changing it          |
-| "ImageKit rejected the API key"                          | `IMAGEKIT_PRIVATE_KEY` is missing, wrong, or the public key                      |
-| Share links point to the wrong address                   | `PUBLIC_SITE_URL` on the API                                                     |
-| "Too many requests" for everyone, or opens stop counting | `PROXY_SECRET` differs between services, or `CLIENT_IP_HEADER` isn't set         |
-| Email reports aren't sent                                | `SMTP_URL` is empty, or the API is on Render's free plan                         |
+| Problem                                                  | Likely cause                                                                      |
+| -------------------------------------------------------- | --------------------------------------------------------------------------------- |
+| API stops with "Invalid environment configuration"       | A required variable is missing or too short; the message names it                 |
+| API stops with "Unsafe production configuration"         | An address isn't public https, or two secrets are the same                        |
+| API can't connect to MongoDB                             | The database doesn't allow the server's IP, or the password isn't percent-encoded |
+| "We couldn't load the offers"                            | `API_URL` is wrong or lacks `/v1`, or the API is asleep or down                   |
+| Admin login returns to the login page                    | `COOKIE_DOMAIN` is set (leave it empty), or `API_URL` is wrong on admin           |
+| Images don't show                                        | Their host isn't in `IMAGE_REMOTE_PATTERNS`; redeploy after changing it           |
+| "ImageKit rejected the API key"                          | `IMAGEKIT_PRIVATE_KEY` is missing, wrong, or the public key                       |
+| Share links point to the wrong address                   | `PUBLIC_SITE_URL` on the API                                                      |
+| "Too many requests" for everyone, or opens stop counting | `PROXY_SECRET` differs between services, or `CLIENT_IP_HEADER` isn't set          |
+| Email reports aren't sent                                | `SMTP_URL` is empty, or the host blocks outgoing SMTP                             |
