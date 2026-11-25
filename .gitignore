@@ -1,0 +1,25 @@
+# Dependencies and build output
+node_modules/
+.next/
+out/
+dist/
+build/
+coverage/
+*.tsbuildinfo
+next-env.d.ts
+
+# Secrets: only the .env.example templates are committed
+.env
+.env.*
+!.env.example
+
+# Local data
+api/uploads/
+api/outbox/
+
+# Logs, OS and editor files
+*.log
+*.pem
+.DS_Store
+.idea/
+.vscode/

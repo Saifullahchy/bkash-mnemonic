@@ -1,0 +1,126 @@
+# Render Blueprint: the offer site, the admin panel, the API and Redis. MongoDB runs on Atlas.
+# Guide: README.md → "Deploy on Render".
+#
+# If Render gives a service another address (a name was taken) or you add custom domains, update
+# the https://…onrender.com values below: NEXT_PUBLIC_SITE_URL, API_URL, CORS_ORIGINS, PUBLIC_SITE_URL.
+
+services:
+  # ---------------------------------------------------------------- API
+  - type: web
+    name: bkash-mnemonic-api
+    runtime: node
+    region: singapore
+    plan: starter
+    rootDir: api
+    buildCommand: npm ci --include=dev && npm run build
+    preDeployCommand: node dist/scripts/syncIndexes.js
+    startCommand: npm start
+    healthCheckPath: /health
+    autoDeployTrigger: commit
+    envVars:
+      - key: NODE_VERSION
+        value: "22"
+      - key: NODE_ENV
+        value: production
+      - key: LOG_LEVEL
+        value: info
+      # Asked once when the Blueprint is created
+      - key: MONGODB_URI
+        sync: false
+      - key: IMAGEKIT_PRIVATE_KEY
+        sync: false
+      # Public addresses
+      - key: PUBLIC_SITE_URL
+        value: https://bkash-mnemonic-web.onrender.com
+      - key: CORS_ORIGINS
+        value: https://bkash-mnemonic-web.onrender.com,https://bkash-mnemonic-admin.onrender.com
+      # Secrets: generated once by Render and kept
+      - key: SESSION_SECRET
+        generateValue: true
+      - key: ADMIN_SESSION_SECRET
+        generateValue: true
+      - key: OPEN_TOKEN_SECRET
+        generateValue: true
+      - key: FINGERPRINT_SALT
+        generateValue: true
+      - key: PROXY_SECRET
+        generateValue: true
+      # Images
+      - key: STORAGE_DRIVER
+        value: imagekit
+      - key: IMAGEKIT_URL_ENDPOINT
+        value: https://ik.imagekit.io/yyzpkkigy
+      - key: IMAGEKIT_FOLDER
+        value: offer-finder
+      # Network
+      - key: TRUST_PROXY
+        value: "1"
+      - key: REDIS_URL
+        fromService:
+          type: keyvalue
+          name: bkash-mnemonic-redis
+          property: connectionString
+
+  # ---------------------------------------------------------------- Offer site
+  - type: web
+    name: bkash-mnemonic-web
+    runtime: node
+    region: singapore
+    plan: starter
+    rootDir: web
+    buildCommand: npm ci --include=dev && npm run build
+    startCommand: npm start
+    healthCheckPath: /healthz
+    autoDeployTrigger: commit
+    envVars:
+      - key: NODE_VERSION
+        value: "22"
+      - key: NEXT_PUBLIC_SITE_URL
+        value: https://bkash-mnemonic-web.onrender.com
+      - key: API_URL
+        value: https://bkash-mnemonic-api.onrender.com/v1
+      - key: CLIENT_IP_HEADER
+        value: cf-connecting-ip
+      - key: IMAGE_REMOTE_PATTERNS
+        value: https://ik.imagekit.io/yyzpkkigy/**
+      - key: PROXY_SECRET
+        fromService:
+          type: web
+          name: bkash-mnemonic-api
+          envVarKey: PROXY_SECRET
+
+  # ---------------------------------------------------------------- Admin panel
+  - type: web
+    name: bkash-mnemonic-admin
+    runtime: node
+    region: singapore
+    plan: free
+    rootDir: admin
+    buildCommand: npm ci --include=dev && npm run build
+    startCommand: npm start
+    healthCheckPath: /healthz
+    autoDeployTrigger: commit
+    envVars:
+      - key: NODE_VERSION
+        value: "22"
+      - key: NEXT_PUBLIC_SITE_URL
+        value: https://bkash-mnemonic-web.onrender.com
+      - key: API_URL
+        value: https://bkash-mnemonic-api.onrender.com/v1
+      - key: CLIENT_IP_HEADER
+        value: cf-connecting-ip
+      - key: IMAGE_REMOTE_PATTERNS
+        value: https://ik.imagekit.io/yyzpkkigy/**
+      - key: PROXY_SECRET
+        fromService:
+          type: web
+          name: bkash-mnemonic-api
+          envVarKey: PROXY_SECRET
+
+  # ---------------------------------------------------------------- Redis (shared rate limits)
+  - type: keyvalue
+    name: bkash-mnemonic-redis
+    region: singapore
+    plan: free
+    ipAllowList: [] # only reachable from this workspace's services
+    maxmemoryPolicy: volatile-ttl

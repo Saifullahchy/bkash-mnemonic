@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="51.65" height="74.52" viewBox="0 0 51.65 74.52" fill="none">
+  <!-- Figma "Phone illustration" (node 480:791), rebuilt from its layer values with a transparent background. -->
+  <defs>
+    <linearGradient id="body" x1="9.096" y1="0" x2="42.553" y2="0" gradientUnits="userSpaceOnUse" gradientTransform="rotate(-14 25.825 38.009)">
+      <stop stop-color="#2B2B30"/><stop offset="1" stop-color="#121214"/>
+    </linearGradient>
+    <linearGradient id="screen" x1="1.434" y1="22.940" x2="50.225" y2="53.087" gradientUnits="userSpaceOnUse" gradientTransform="rotate(-14 25.829 38.013)">
+      <stop stop-color="#FF8CBF"/><stop offset="0.71429" stop-color="#E2136E"/>
+    </linearGradient>
+  </defs>
+  <rect x="10.096" y="5.553" width="31.456" height="64.912" rx="9" transform="rotate(-14 25.825 38.009)" fill="url(#body)" stroke="#D1BDA8" stroke-width="2"/>
+  <rect x="11.382" y="6.839" width="28.894" height="62.349" rx="7" transform="rotate(-14 25.829 38.013)" fill="url(#screen)"/>
+  <rect x="13.880" y="9.932" width="10.645" height="3.041" rx="2" transform="rotate(-14 19.203 11.453)" fill="#000"/>
+  <circle cx="26.197" cy="39.487" r="7.6036" fill="#fff" fill-opacity="0.35"/>
+</svg>

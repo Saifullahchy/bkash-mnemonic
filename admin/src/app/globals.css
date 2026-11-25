@@ -1,0 +1,143 @@
+@import "tailwindcss";
+
+/* Design tokens (Figma "bkash offer" — Admin Panel). Same brand as the offer site. */
+@theme {
+  --font-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+
+  --color-brand-50: #fdf0f6;
+  --color-brand-100: #fce1ec;
+  --color-brand-200: #f9c3d9;
+  --color-brand-300: #f48db5;
+  --color-brand-400: #ec4d8e;
+  --color-brand-500: #e2136e;
+  --color-brand-600: #c70f60;
+  --color-brand-700: #a10c4e;
+  --color-brand-800: #7a0a3c;
+  --color-brand-900: #4f0727;
+
+  /* Figma Admin Panel palette */
+  --color-ink: #21181c;
+  --color-muted: #5d5358;
+  --color-subtle: #8e8589;
+  --color-line: #eae3e6;
+  --color-field: #f7f5f6;
+  --color-canvas: #f7f5f6;
+  --color-surface: #ffffff;
+
+  /* Figma text boxes use the font's "normal" line height. Tailwind's size classes
+     carry their own (e.g. text-sm = 20px), which made every text block a few px
+     taller than the design, so all admin sizes use "normal" unless a leading-* class
+     says otherwise. */
+  --text-xs--line-height: normal;
+  --text-sm--line-height: normal;
+  --text-base--line-height: normal;
+  --text-lg--line-height: normal;
+  --text-xl--line-height: normal;
+  --text-2xl--line-height: normal;
+  --text-3xl--line-height: normal;
+
+  /* Figma cards: 18px radius, soft drop shadow; primary buttons: small dark shadow. */
+  --shadow-card: 0 6px 18px 0 rgb(74 25 48 / 0.06);
+  --shadow-brand: 0 4px 6px 0 rgb(74 25 48 / 0.18);
+}
+
+@layer base {
+  body {
+    @apply bg-canvas text-ink antialiased;
+  }
+
+  /* Native date picker icon is replaced by our calendar icon. */
+  input[type="date"]::-webkit-calendar-picker-indicator {
+    position: absolute;
+    inset: 0;
+    width: auto;
+    height: auto;
+    opacity: 0;
+    cursor: pointer;
+  }
+
+  /* While a modal dialog or drawer is open, the page behind it doesn't scroll and
+     its scrollbar is hidden, so only the dialog's own (pink) scrollbar shows. */
+  html:has(dialog[open]:modal) {
+    overflow: hidden;
+  }
+
+  /* Figma "Overlay": #21181c at 50%. */
+  dialog::backdrop {
+    background: rgb(33 24 28 / 0.5);
+  }
+}
+
+/* Thin brand scrollbar (2px pink thumb, no track) for scrolling panels such as the
+   participant drawer. Chrome/Safari use the ::-webkit-scrollbar rules; browsers
+   without them (Firefox) fall back to the standard thin scrollbar in pink. */
+@layer utilities {
+  .scrollbar-pink::-webkit-scrollbar {
+    width: 2px;
+    height: 2px;
+  }
+  .scrollbar-pink::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  .scrollbar-pink::-webkit-scrollbar-thumb {
+    background: #e2136e;
+    border-radius: 999px;
+  }
+  @supports not selector(::-webkit-scrollbar) {
+    .scrollbar-pink {
+      scrollbar-width: thin;
+      scrollbar-color: #e2136e transparent;
+    }
+  }
+}
+
+/* Rich text (Terms editor + preview). Matches the offer site's popup styles. */
+@layer components {
+  /* Editor text (Figma 240:640): 14px / 22px #5d5358 body, bold #21181c headings,
+     6px between blocks and a little more air (20px) before each heading. */
+  .terms-editor {
+    @apply leading-[22px] text-[#5d5358];
+  }
+  .terms-editor :is(p, ul, ol, h2, h3, blockquote) + :is(p, ul, ol, blockquote) {
+    @apply mt-1.5;
+  }
+  .terms-editor :is(p, ul, ol, h2, h3, blockquote) + :is(h2, h3) {
+    @apply mt-5;
+  }
+  .terms-editor :is(h2, h3) {
+    @apply text-ink font-bold;
+  }
+  /* Preview = the offer site's Terms popup (Figma 233:877): body #5d5358 at 1.4,
+     paragraphs run on, headings dark with a little air above. Size comes from the
+     container (10px full size, smaller in the compact preview). */
+  .terms-preview {
+    @apply leading-[1.4] text-[#5d5358];
+  }
+  .terms-preview :is(h2, h3, h4) {
+    @apply mt-[1em] mb-[0.2em] text-[1.1em] font-bold text-[#21181c] first:mt-0;
+  }
+  .terms-preview :is(strong, b) {
+    @apply font-semibold text-[#21181c];
+  }
+  .terms-editor h2 {
+    @apply text-[15px];
+  }
+  .terms-editor h3 {
+    @apply text-sm;
+  }
+  .terms-editor ul,
+  .terms-preview ul {
+    @apply list-disc pl-5;
+  }
+  .terms-editor ol,
+  .terms-preview ol {
+    @apply list-decimal pl-5;
+  }
+  .terms-editor a,
+  .terms-preview a {
+    @apply text-brand-500 underline underline-offset-2;
+  }
+  .terms-editor blockquote {
+    @apply border-brand-200 border-l-2 pl-3;
+  }
+}

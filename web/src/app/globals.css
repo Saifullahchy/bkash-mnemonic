@@ -1,0 +1,260 @@
+@import "tailwindcss";
+
+/*
+ * Design tokens (from Figma "bkash offer").
+ * Brand pink is the primary color; gold is used for prize/rank accents.
+ */
+@theme {
+  --font-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+
+  --color-brand-50: #fdf0f6;
+  --color-brand-100: #fce1ec;
+  --color-brand-200: #f9c3d9;
+  --color-brand-300: #f48db5;
+  --color-brand-400: #ec4d8e;
+  --color-brand-500: #e2136e;
+  --color-brand-600: #c70f60;
+  --color-brand-700: #a10c4e;
+  --color-brand-800: #7a0a3c;
+  --color-brand-900: #4f0727;
+
+  --color-gold-200: #fde9b0;
+  --color-gold-300: #fcd980;
+  --color-gold-400: #f6c453;
+  --color-gold-500: #e9a82b;
+
+  --color-ink: #1a1a1f;
+  --color-muted: #6b6b76;
+  --color-line: #ececf0;
+  --color-surface: #ffffff;
+
+  --shadow-card: 0 6px 24px -10px rgb(26 26 31 / 0.18);
+  --shadow-brand: 0 10px 30px -12px rgb(226 19 110 / 0.55);
+  --shadow-glow: 0 0 0 4px rgb(226 19 110 / 0.08), 0 12px 32px -14px rgb(226 19 110 / 0.45);
+
+  /* Copy feedback */
+  --animate-pop: pop 420ms cubic-bezier(0.34, 1.56, 0.64, 1) both;
+  --animate-draw: draw 300ms 140ms ease-out both;
+  --animate-ring: ring 700ms 80ms ease-out both;
+  --animate-bump: bump 260ms ease-out;
+  /* Gentle swap-in: no overshoot, so nothing grows past its container. */
+  --animate-soft-in: soft-in 280ms cubic-bezier(0.22, 1, 0.36, 1) both;
+
+  @keyframes soft-in {
+    from {
+      opacity: 0;
+      transform: translateY(4px);
+    }
+    to {
+      opacity: 1;
+      transform: none;
+    }
+  }
+
+  /* Popups & offer details */
+  --animate-sheet-in: sheet-in 420ms cubic-bezier(0.22, 1, 0.36, 1) both;
+  --animate-fade-up: fade-up 420ms cubic-bezier(0.22, 1, 0.36, 1) both;
+  --animate-banner-zoom: banner-zoom 900ms cubic-bezier(0.22, 1, 0.36, 1) both;
+  --animate-shine: shine 1100ms 650ms ease-in-out both;
+
+  @keyframes sheet-in {
+    from {
+      opacity: 0;
+      transform: translateY(24px) scale(0.94);
+    }
+    to {
+      opacity: 1;
+      transform: none;
+    }
+  }
+  @keyframes fade-up {
+    from {
+      opacity: 0;
+      transform: translateY(10px);
+    }
+    to {
+      opacity: 1;
+      transform: none;
+    }
+  }
+  @keyframes banner-zoom {
+    from {
+      transform: scale(1.12);
+    }
+    to {
+      transform: scale(1);
+    }
+  }
+  @keyframes shine {
+    from {
+      transform: translateX(-120%) skewX(-20deg);
+    }
+    to {
+      transform: translateX(260%) skewX(-20deg);
+    }
+  }
+
+  @keyframes pop {
+    0% {
+      opacity: 0;
+      transform: scale(0.3);
+    }
+    60% {
+      opacity: 1;
+      transform: scale(1.18);
+    }
+    100% {
+      transform: scale(1);
+    }
+  }
+  /* Draws a stroke whose dash length is set to its path length (see CheckDraw). */
+  @keyframes draw {
+    from {
+      stroke-dashoffset: var(--path-length, 12);
+    }
+    to {
+      stroke-dashoffset: 0;
+    }
+  }
+  @keyframes ring {
+    from {
+      box-shadow: 0 0 0 0 rgb(232 247 240 / 0.75);
+    }
+    to {
+      box-shadow: 0 0 0 9px rgb(232 247 240 / 0);
+    }
+  }
+  @keyframes bump {
+    40% {
+      transform: scale(0.95);
+    }
+  }
+}
+
+@layer base {
+  :root {
+    /* Desktop (md+) width incl. 24px gutters, as on offer-finder.com (1052px of content). */
+    --page-width: 1100px;
+  }
+
+  html {
+    -webkit-tap-highlight-color: transparent;
+    /* Hide the page scrollbar (scrolling still works). */
+    scrollbar-width: none;
+  }
+  html::-webkit-scrollbar {
+    display: none;
+  }
+
+  /* Lenis (smooth wheel scrolling) */
+  html.lenis,
+  html.lenis body {
+    height: auto;
+  }
+  .lenis.lenis-smooth {
+    scroll-behavior: auto !important;
+  }
+  .lenis.lenis-stopped {
+    overflow: hidden;
+  }
+
+  body {
+    @apply text-ink antialiased;
+  }
+
+  /* Lock page scroll while a native modal <dialog> is open. */
+  html:has(dialog[open]) {
+    overflow: hidden;
+  }
+
+  /* Figma popups ("Frame 50"): 40% black overlay, no blur; it fades in. */
+  dialog::backdrop {
+    background: rgb(0 0 0 / 0.4);
+  }
+  @media (prefers-reduced-motion: no-preference) {
+    dialog[open]::backdrop {
+      animation: backdrop-in 260ms ease-out both;
+    }
+  }
+  /* Scroll reveal (Reveal component). Only hidden once JS has marked the page ready. */
+  @media (prefers-reduced-motion: no-preference) {
+    html.motion-ready [data-reveal] {
+      opacity: 0;
+      transform: translateY(28px) scale(0.985);
+      transition:
+        opacity 800ms cubic-bezier(0.22, 1, 0.36, 1),
+        transform 900ms cubic-bezier(0.22, 1, 0.36, 1);
+      will-change: opacity, transform;
+    }
+    html.motion-ready [data-reveal][data-revealed] {
+      opacity: 1;
+      transform: none;
+      will-change: auto;
+    }
+  }
+
+  /* Banner parallax: the image drifts as its card crosses the screen. Driven by
+     scroll position (scroll-driven animation), so there is no JS work while scrolling.
+     Its frames use overflow: clip, not hidden: "hidden" would make each frame its own
+     (non-scrolling) scroll container and freeze the animation. */
+  @supports (animation-timeline: view()) {
+    /* Phones only: the zoom it needs would crop the wider desktop banners. */
+    @media (prefers-reduced-motion: no-preference) and (max-width: 47.99rem) {
+      .banner-parallax {
+        animation: banner-parallax linear both;
+        animation-timeline: view();
+        animation-range: entry 0% exit 100%;
+      }
+    }
+  }
+  @keyframes banner-parallax {
+    from {
+      transform: translateY(-7%) scale(1.14);
+    }
+    to {
+      transform: translateY(7%) scale(1.14);
+    }
+  }
+
+  /* Offer details popup: blocks fade up in sequence (delay set inline). */
+  @media (prefers-reduced-motion: no-preference) {
+    [data-stagger] {
+      animation: fade-up 420ms cubic-bezier(0.22, 1, 0.36, 1) both;
+    }
+  }
+  @keyframes backdrop-in {
+    from {
+      background: rgb(0 0 0 / 0);
+    }
+  }
+}
+
+/* Rich text from the admin Terms editor (sanitised by the API). */
+@layer components {
+  /* Terms text (Figma "Bottom sheet" 233:877): 10px / 1.4, #5d5358, paragraphs
+     run on without gaps; headings from the admin editor get a little air above. */
+  .terms-content {
+    @apply text-[10px] leading-[1.4] text-[#5d5358];
+  }
+  .terms-content :is(h2, h3, h4) {
+    @apply mt-2.5 mb-0.5 text-[11px] font-bold text-[#21181c] first:mt-0;
+  }
+  .terms-content :is(strong, b) {
+    @apply font-semibold text-[#21181c];
+  }
+  .terms-content :is(ul, ol) {
+    @apply my-1 space-y-0.5 pl-4;
+  }
+  .terms-content ul {
+    @apply list-disc;
+  }
+  .terms-content ol {
+    @apply list-decimal;
+  }
+  .terms-content a {
+    @apply text-brand-500 underline underline-offset-2;
+  }
+  .terms-content blockquote {
+    @apply border-brand-200 my-1 border-l-2 pl-3;
+  }
+}
